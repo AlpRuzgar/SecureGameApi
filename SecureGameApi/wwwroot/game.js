@@ -248,6 +248,48 @@ class GameScene extends Phaser.Scene {
     create() {
         this.gameActive = false;
 
+        this.inputLog = [];
+
+        // Keydown
+        this.input.keyboard.on('keydown', (event) => {
+            this.inputLog.push({
+                type: 'keydown',
+                key: event.code,                          // Örn: "ArrowLeft", "Space"
+                t: Date.now() - this.gameMetrics.startTime // Başlangıca göre milisaniye
+            });
+        });
+
+        // Keyup
+        this.input.keyboard.on('keyup', (event) => {
+            this.inputLog.push({
+                type: 'keyup',
+                key: event.code,
+                t: Date.now() - this.gameMetrics.startTime
+            });
+        });
+
+        // Pointer (fare veya touch) basıldı
+        this.input.on('pointerdown', (pointer) => {
+            this.inputLog.push({
+                type: 'pointerdown',
+                x: Math.floor(pointer.x),
+                y: Math.floor(pointer.y),
+                t: Date.now() - this.gameMetrics.startTime
+            });
+        });
+
+        // Pointer kaldırıldı
+        this.input.on('pointerup', (pointer) => {
+            this.inputLog.push({
+                type: 'pointerup',
+                x: Math.floor(pointer.x),
+                y: Math.floor(pointer.y),
+                t: Date.now() - this.gameMetrics.startTime
+            });
+        });
+
+
+
         this.jumpPower = 810;
 
         this.lastPlatformY = 650;
@@ -266,6 +308,7 @@ class GameScene extends Phaser.Scene {
         this.fallHandled = false;
 
         this.gameMetrics = {
+            token: null,
             playerId: "player_" + Math.floor(Math.random() * 100000),  // ya da giriş yapan kullanıcı ID’si
             startTime: Date.now(),
             endTime: null,
@@ -278,9 +321,9 @@ class GameScene extends Phaser.Scene {
             damageTaken: 0, // hasar sayacı
             jumpCount: 0, // zıplama sayacı
             score: 0, // toplam skor
-            hearts: 6 // kalan kalp sayısı
+            hearts: 6, // kalan kalp sayısı
+            spawnLocations: [],
         };
-
 
         this.isMobile = this.sys.game.device.input.touch;
 
@@ -290,15 +333,25 @@ class GameScene extends Phaser.Scene {
         else {
             this.touchDirection = null;
             this.input.on('pointerdown', pointer => {
-                if (pointer.x > this.game.config.width / 2) {
-                    this.touchDirection = 'right';
-                } else {
-                    this.touchDirection = 'left';
-                }
+                this.touchDirection = (pointer.x > this.game.config.width / 2) ? 'right' : 'left';
+                this.inputLog.push({
+                    type: 'pointerdown',
+                    x: pointer.x,
+                    y: pointer.y,
+                    t: Date.now() - this.gameMetrics.startTime
+                });
+
             });
             this.input.on('pointerup', () => {
                 this.touchDirection = null;
+                this.inputLog.push({
+                    type: 'pointerup',
+                    x: null,
+                    y: null,
+                    t: Date.now() - this.gameMetrics.startTime
+                });
             });
+
         }
 
         //arka plan oluşturma
@@ -309,6 +362,8 @@ class GameScene extends Phaser.Scene {
         this.addBackground(config.width / 2, config.height - 4 * (13200 / 5), 'background1');
 
         this.addUIElements();
+
+        this.createToken();
 
         this.player = this.physics.add.sprite(config.width / 2, config.height - 400, 'player'); //config.height - 400
         this.player.setScale(0.1);
@@ -685,16 +740,21 @@ class GameScene extends Phaser.Scene {
         this.submitScoreToServer();
     }
     submitScoreToServer() {
+        if (!this.gameMetrics.token) {
+            console.error("Token hazır değil, skor gönderilemedi!");
+            return;
+        }
         const raw = this.gameMetrics;
+        const now = Date.now();
         const height = Math.abs(this.maxHeight - (config.height - 400));
         const payload = {
+            token: raw.token,
             playerId: raw.playerId,
             score: raw.score,
             startTime: raw.startTime,
-            endTime: Date.now(),
-            durationSeconds: Math.floor((Date.now() - raw.startTime) / 1000),
+            endTime: now,
+            durationSeconds: Math.floor((now - raw.startTime) / 1000),
             hearts: raw.hearts,
-            // 🎯 Burada float olan height'ı floor ile tamsayıya çeviriyoruz
             heightReached: Math.floor(height),
             platformSpawned: raw.platformSpawned,
             trophySpawned: raw.trophySpawned,
@@ -703,7 +763,8 @@ class GameScene extends Phaser.Scene {
             coinCollected: raw.coinCollected,
             enemySpawned: raw.enemySpawned,
             damageTaken: raw.damageTaken,
-            jumpCount: raw.jumpCount
+            jumpCount: raw.jumpCount,
+            inputLog: this.inputLog
         };
 
         fetch("https://localhost:7113/api/gamescore/submit", {
@@ -725,6 +786,19 @@ class GameScene extends Phaser.Scene {
             .catch(error => {
                 console.error("Skor gönderimi başarısız:", error);
             });
+    }
+    createToken() {
+        fetch("https://localhost:7113/api/gamescore/start", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ playerId: this.gameMetrics.playerId })
+        })
+            .then(res => res.json())
+            .then(data => {
+                //token burada geliyor
+                this.gameMetrics.token = data.token;
+            })
+            .catch(err => console.error("Token alınamadı:", err));
     }
 
     handleEnemyHit(enemy) {
@@ -777,11 +851,13 @@ class GameScene extends Phaser.Scene {
 
     addCoin() {
         let y = this.lastCoinY - this.coinGap;
-        this.coin = this.coins.create(Phaser.Math.Between(100, config.width - 100), y, 'coin');
+        let x = Phaser.Math.Between(100, config.width - 100);
+        this.coin = this.coins.create( x, y, 'coin');
         this.coin.body.setAllowGravity(false);
         this.coin.setScale(0.1);
         this.lastCoinY = this.coin.y;
         this.gameMetrics.coinSpawned++;
+        this.gameMetrics.coinPositions.push({ x, y});
     }
     collectCoin(coin) {
         coin.destroy();
@@ -1206,7 +1282,7 @@ const config = {
             debug: true,
         }
     },
-    scene: [StartScene, GameScene, GameOverScene, WinScene]//StartScene, GameScene , GameOverScene, WinScene]
+    scene: [StartScene, GameScene, GameOverScene, WinScene]
 };
 
 const game = new Phaser.Game(config);

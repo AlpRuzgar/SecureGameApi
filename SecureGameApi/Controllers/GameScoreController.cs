@@ -12,10 +12,31 @@ namespace SecureGameApi.Controllers
         [HttpPost("submit")]
         public IActionResult SubmitScore([FromBody] GameScoreSubmissionDto data)
         {
+            // Token kontrolü
+            var tokenEntry = ActiveTokens.FirstOrDefault(t => t.Token == data.Token);
+
+            if (tokenEntry == null)
+
+                return BadRequest("Geçersiz token.");
+
+            if (tokenEntry.Used)
+                return BadRequest("Token zaten kullanıldı.");
+
+            if (tokenEntry.PlayerId != data.PlayerId)
+                return BadRequest("Token bu kullanıcıya ait değil.");
+
+            if ((DateTime.UtcNow - tokenEntry.CreatedAt).TotalMinutes > 10)
+                return BadRequest("Token süresi dolmuş.");
+
+            tokenEntry.Used = true; // Token kullanıldı olarak işaretle
+
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
+
+            if (data.InputLog == null || data.InputLog.Count < 1 || data.InputLog.Count > 10000)
+                return BadRequest("Şüpheli input log boyutu.");
 
             if (data.CoinCollected > data.CoinSpawned)
                 return BadRequest("Şüpheli toplanan coin sayısı");
@@ -54,8 +75,6 @@ namespace SecureGameApi.Controllers
             return Ok(new
             {
                 Message = "Skor başarıyla kaydedildi.",
-                data.Score,
-                TotalPlayers = Scores.Count
             });
         }
 
@@ -64,5 +83,25 @@ namespace SecureGameApi.Controllers
         {
             return Ok(Scores);
         }
+
+        private static readonly List<GameSessionToken> ActiveTokens = new();
+
+        [HttpPost("start")]
+        public IActionResult StartGame([FromBody] StartGameRequestDto req)
+        {
+            if (string.IsNullOrEmpty(req.PlayerId))
+                return BadRequest("PlayerId zorunlu.");
+
+            var token = Guid.NewGuid().ToString();
+            ActiveTokens.Add(new GameSessionToken
+            {
+                Token = token,
+                PlayerId = req.PlayerId,
+                CreatedAt = DateTime.UtcNow,
+                Used = false
+            });
+            return Ok(new { token });
+        }
+
     }
 }
