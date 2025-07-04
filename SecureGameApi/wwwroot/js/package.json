@@ -1,0 +1,19 @@
+{
+    "name": "js",
+    "version": "1.0.0",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "build": "esbuild src/game.js --bundle --minify --sourcemap --outfile=dist/game.bundle.js --legal-comments=none",
+        "obfuscate": "javascript-obfuscator dist/game.bundle.js --config=\"C:/Users/Alp/source/repos/SecureGameApi/SecureGameApi/wwwroot/js/obfuscator.config.json\" --output dist/game.bundle.js",
+        "generate-integrity": "node scripts/gen-integrity.js"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "description": "",
+    "devDependencies": {
+        "esbuild": "^0.25.5",
+        "javascript-obfuscator": "^4.1.1"
+    }
+}

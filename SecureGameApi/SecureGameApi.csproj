@@ -7,18 +7,30 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Services\**" />
+    <Compile Remove="wwwroot\NewFolder\**" />
+    <Content Remove="Services\**" />
+    <Content Remove="wwwroot\NewFolder\**" />
+    <EmbeddedResource Remove="Services\**" />
+    <EmbeddedResource Remove="wwwroot\NewFolder\**" />
+    <None Remove="Services\**" />
+    <None Remove="wwwroot\NewFolder\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Remove="Models\ReplayResults.cs" />
     <Compile Remove="Models\StartGameRequestDto.cs" />
-    <Compile Remove="Services\GameSimulator.cs" />
   </ItemGroup>
 
   <ItemGroup>
+    <Content Remove="wwwroot\js\dist\game.bundle.js" />
+    <Content Remove="wwwroot\js\dist\game.bundle.js.map" />
+    <Content Remove="wwwroot\utils.js.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AspNetCoreRateLimit" Version="5.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Services\" />
-    <Folder Include="wwwroot\" />
   </ItemGroup>
 
 </Project>
