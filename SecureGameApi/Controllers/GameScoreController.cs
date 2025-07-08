@@ -137,7 +137,7 @@ namespace SecureGameApi.Controllers
                 return BadRequest("Şüpheli hasar alma sayısı");
             if (data.DamageTaken + data.Hearts > 6)
                 return BadRequest("Şüpheli can + hasar verisi");
-            if (data.TrophyCollected && (data.EnemySpawned < 10 || data.PlatformSpawned < 80 || data.CoinSpawned < 100 || data.JumpCount < 40))
+            if (data.TrophyCollected && ((data.EnemySpawned < 10 || data.PlatformSpawned < 80 || data.CoinSpawned < 61 || data.JumpCount < 40)))
                 return BadRequest("Şüpheli wingame verisi - oyun tamamlanmamış görünüyor");
             if (data.DurationSeconds * 3 < data.PlatformSpawned)
                 return BadRequest("Şüpheli platform spawn sıklığı");

@@ -63,6 +63,7 @@ app.MapControllers();
 
 app.UseCors("AllowGameClient");
 
+
 app.MapControllers();
 app.Run();
 

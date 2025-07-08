@@ -261,7 +261,7 @@ class GameScene extends Phaser.Scene {
         this.enemyGap = 900; // düşmanların spawn aralığı
 
         this.lastCoinY = 650;
-        this.coinGap = 100;
+        this.coinGap = 200;
 
         this.inSpace = false;
 
@@ -722,7 +722,7 @@ class GameScene extends Phaser.Scene {
 
 
         // 3) İmzayı header’da gönder
-        fetch("https://localhost:7113/api/gamescore/submit", {
+        fetch("https://localhost:7113/api/gamescore/submit", { //5181
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -755,21 +755,17 @@ class GameScene extends Phaser.Scene {
 
     handleEnemyHit(enemy) {
         this.sound.play('damageSound', { volume: 0.5 });
-        if (this.gameMetrics.hearts >= 3) {
-            for (let i = 0; i < 3; i++) {
-                this.handleDamage();
-            }
-        }
-        else {
-            for (let i = 0; i < this.gameMetrics.hearts; i++) {
-                this.handleDamage();
-            }
-        }
         enemy.destroy();
-        if (this.gameMetrics.hearts < 1) {
+        const heartsToRemove = Math.min(3, this.gameMetrics.hearts);
+        for (let i = 0; i < heartsToRemove; i++) {
+            this.handleDamage();
+        }
+        this.gameMetrics.hearts -= (3 - heartsToRemove);
+        if (this.gameMetrics.hearts <= 0) {
             this.handleGameOver();
         }
     }
+
     handleBulletHit(bullet) {
         this.handleDamage();
         this.sound.play('damageSound', { volume: 0.5 });
@@ -1222,5 +1218,9 @@ const config = {
 
 const game = new Phaser.Game(config);
 
-//! alien yok olmasına rağmen ateş ediyor
+//cd ile wwwroot/js klasörüne gidin
+//npm run build
+//npx javascript-obfuscator dist/game.bundle.js --output dist/game.bundle.js
+//npm run generate-integrity
+//uygulamayı çalıştır
 

@@ -26,4 +26,5 @@
         // Yüklemeyi kes: body’yi boşaltabiliriz
         document.documentElement.innerHTML = '<h1>Oyun yüklenemedi.</h1>';
     }
+    // tamperCheck.js içinde örneğin:
 })();

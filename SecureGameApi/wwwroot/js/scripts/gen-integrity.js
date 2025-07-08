@@ -1,20 +1,16 @@
-﻿// gen-integrity.js
-import { readFileSync, writeFileSync } from 'fs';
-import { createHash } from 'crypto';
+﻿// wwwroot/js/scripts/gen-integrity.js
 
-// 1) Okuyacağımız bundle dosyası
-const bundlePath = 'dist/game.bundle.js';
-const outputPath = 'dist/integrity.json';
+const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
 
-// 2) Dosyayı oku ve SHA-384 hash hesapla
-const buf = readFileSync(bundlePath);
-const hash = createHash('sha384').update(buf).digest('base64');
-const bundleHash = `sha384-${hash}`;
+// __dirname === .../wwwroot/js/scripts
+const bundlePath = path.resolve(__dirname, '../dist/game.bundle.js');
+const integrityPath = path.resolve(__dirname, '../dist/integrity.json');
 
-// 3) integrity.json diye yaz
-writeFileSync(outputPath,
-    JSON.stringify({ bundleHash }),
-    'utf8'
-);
+const buf = fs.readFileSync(bundlePath);
+const hash = crypto.createHash('sha384').update(buf).digest('base64');
+const integrity = 'sha384-' + hash;
 
-console.log('integrity.json oluşturuldu:', bundleHash);
+fs.writeFileSync(integrityPath, JSON.stringify({ bundleHash: integrity }, null, 2));
+console.log(`› integrity.json güncellendi: ${integrity}`);
